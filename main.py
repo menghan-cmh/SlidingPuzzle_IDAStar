@@ -10,7 +10,9 @@ class State:
     Each state has:
     board <- each index represents a tile's coordinate. index 0<- tile 1...index 8 <- tile 0
     h <- Int: Manhattan distance
-    x, y <- Int, Int: coordinate of the blank tile(00)
+    g <- Int: distance from start to current
+    x, y <- Int, Int: coordinate of the blank tile(0)
+    d <- Int: cost bound
     """
 
     def __init__(self, puzzle):
@@ -20,6 +22,7 @@ class State:
         self._y = self._board[8][1]
         self._g = 0
         self._h = 0
+        self._d = 0
         self._cost = 0
     
     def __repr__(self):
@@ -50,6 +53,25 @@ class State:
                 continue
             self._board.append([index // 3, index % 3])
         self._board.append([temp // 3, temp % 3])
+    
+
+    def cotol(self, coordinate):
+        """
+        convert the coordinate to the puzzle list
+        """
+        puzzle = []
+        for i in range(9):
+            puzzle.append([])
+        for i in range(3):
+            for j in range(3):
+                index = coordinate.index([i, j])
+                if index == 8:
+                    index = 0
+                else:
+                    index += 1
+                puzzle[i*3+j] = index
+        return puzzle
+
 
 
     def successors(self):
@@ -63,7 +85,12 @@ class State:
                     # pass diagonal moving or no moving
                     continue
                 if self.is_valid_pair(self._x + i, self._y + j):
-                    s = State(self._x + i, self._y + j)
+                    temp = self._board.index([self._x + i, self._y + j])
+                    coordinate = self._board.copy()
+                    coordinate[temp] = [self._x, self._y]
+                    coordinate[8] = [self._x + i, self._y + j]
+                    puzzle = self.cotol(coordinate)
+                    s = State(puzzle)
                     s._g += 1
                     children.append(s)
         return children
@@ -100,8 +127,26 @@ class IDAStar:
         return d
 
     
-    def dfs(self):
-        return
+    def dfs(self, n, goal, d, max_bound):
+        """
+        dfs algorithm
+        receive the current state, goal state and the 
+        """
+        if n == goal:
+            return -d
+        if d + n._h > max_bound:
+            return d + n._h
+        mini = float("inf")
+        for n_i in n.successors():
+            t = self.dfs(n_i, goal, d+1, max_bound)
+            print(max_bound, d, t)
+            if t < 0:
+                print(n)
+                return t
+            elif t < mini:
+                mini = t
+        return mini
+
         
 
 
@@ -109,19 +154,16 @@ class IDAStar:
         """
         IDA* Algorithm
         """
-        self.OPEN = []
-        start.set_h(self.h_value(start))
-        heapq.heappush(self.OPEN, start)
-        node_expanded = 0
-
         flag = 0 # flag for if the search is done
+        max_bound = self.h_value(start)
         while flag == 0:
-            n = heapq.heappop(self.OPEN)
-            node_expanded += 1
-            if n == goal:
-                return n.get_cost(), node_expanded
-            for n_i in n.successors():
-                self.dfs()
+            d = self.dfs(start, goal, 0, max_bound)
+            if d == float("inf"):
+                return False
+            elif d < 0:
+                return -d
+            else:
+                max_bound = d
                 
 
 
@@ -131,9 +173,7 @@ def main():
     start = State([5, 2, 7, 8, 4, 0, 1, 3, 6])
     goal = State([1, 2, 3, 4, 5, 6, 7, 8, 0])
     a = IDAStar()
-
-    print("Manhattan: ", a.h_value(start))
-    #IDAStar.search(start, goal)
+    print(a.search(start, goal))
     return
 
 if __name__ == "__main__":
