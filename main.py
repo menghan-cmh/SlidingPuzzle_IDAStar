@@ -1,6 +1,6 @@
 import time
 import heapq
-
+num = 0
 
 class State:
     """
@@ -132,20 +132,23 @@ class IDAStar:
         dfs algorithm
         receive the current state, goal state and the 
         """
-        if n == goal:
-            return -d
-        if d + n._h > max_bound:
-            return d + n._h
-        mini = float("inf")
+        n._g = d
+        n._cost = d + self.h_value(n)
+        if n._board == goal._board:
+            return "FINISH"
+        if n._cost > max_bound:
+            return n._cost
+        min = float("inf")
         for n_i in n.successors():
-            t = self.dfs(n_i, goal, d+1, max_bound)
-            print(max_bound, d, t)
-            if t < 0:
-                print(n)
-                return t
-            elif t < mini:
-                mini = t
-        return mini
+            if n_i not in self.PATH:
+                self.PATH.append(n_i)
+                d = self.dfs(n_i, goal, d+1, max_bound)
+                if d == "FINISH":
+                    return d
+                if d < min:
+                    min = d
+                self.PATH.pop(-1)
+        return min
 
         
 
@@ -156,24 +159,33 @@ class IDAStar:
         """
         flag = 0 # flag for if the search is done
         max_bound = self.h_value(start)
-        while flag == 0:
+        self.PATH = [start]
+
+        while True:
             d = self.dfs(start, goal, 0, max_bound)
+            if d == "FINISH":
+                return (self.PATH, max_bound)
             if d == float("inf"):
-                return False
-            elif d < 0:
-                return -d
-            else:
-                max_bound = d
+                return ([], None)
+            max_bound = d
                 
 
 
 
 
 def main():
-    start = State([5, 2, 7, 8, 4, 0, 1, 3, 6])
+    start = State([1,2,3,4,6,0,7,5,8])
+    # start = State([1, 2, 3, 4, 5, 6, 7, 0, 8])
     goal = State([1, 2, 3, 4, 5, 6, 7, 8, 0])
     a = IDAStar()
-    print(a.search(start, goal))
+    path, step = a.search(start, goal)
+    if step != None:
+        print("The step of solution is shown below: \n")
+        for state in path:
+            print(state)
+            print()
+    else:
+        print("Didn't find solution.")
     return
 
 if __name__ == "__main__":
